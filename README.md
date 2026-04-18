@@ -1,0 +1,158 @@
+# NoteSlip
+
+双向增量 Markdown 笔记同步工具——通过"导出纯文本包 → 搬运 → 导入"在两台电脑间同步笔记，不依赖云盘或实时连接。
+
+## 特性
+
+- **双向增量**：两边都能改，只传差异
+- **纯文本传输**：变更打包为 base64 分片文本，可通过聊天、邮件、U盘搬运
+- **冲突安全**：同一文件双方都改了不会丢数据，冲突版本存到 `.conflicts` 目录
+- **零依赖**：纯 Python 标准库实现
+
+## 安装
+
+```bash
+cd NoteSlip
+pip install -e .
+```
+
+安装后即可使用 `noteslip` 命令。
+
+## 环境变量配置
+
+开始使用前，先设置环境变量。后续所有命令都会自动读取，无需每次指定路径。
+
+| 环境变量 | 作用 | 示例值 |
+|---|---|---|
+| `NOTESLIP_VAULT` | 库根目录 | `D:\Vault` |
+| `NOTESLIP_SIDE` | 本机标识（home 或 work） | `home` |
+| `NOTESLIP_PARTS_DIR` | 导入时的分片目录 | `D:\Downloads\parts` |
+
+**Windows PowerShell**：
+
+```powershell
+# 直接设置
+$env:NOTESLIP_VAULT="D:\Vault"
+$env:NOTESLIP_SIDE="home"
+
+# 或写入 .env.ps1 文件后每次加载
+. .env.ps1
+```
+
+**Bash / Zsh**：
+
+```bash
+export NOTESLIP_VAULT="D:/Vault"
+export NOTESLIP_SIDE="home"
+# 或 source .env.sh
+```
+
+项目提供了模板文件，复制后修改路径即可：
+
+- `.env.example` — 通用说明
+- `.env.ps1` — PowerShell 版
+- `.env.sh` — Bash/Zsh 版
+
+## 使用方法
+
+### 1. 初始化
+
+在两台电脑上分别执行：
+
+```bash
+# 公司电脑
+noteslip init home
+
+# 家里电脑
+noteslip init work
+```
+
+初始化后目录结构：
+
+```
+D:\Vault\
+├── main\              # 主库，放你想同步的 .md 文件
+│   └── .conflicts\    # 冲突文件（本地用，不同步）
+└── .sync\             # 同步元数据
+    ├── state.json     # 状态文件
+    ├── out\           # 导出分片输出
+    └── in\            # 导入分片输入
+```
+
+### 2. 导出
+
+在改动端执行：
+
+```bash
+noteslip export
+```
+
+导出的分片文件在 `.sync\out\part001.txt`、`part002.txt`... 中。
+
+### 3. 搬运分片
+
+将 `.sync\out\` 中的所有 `part*.txt` 文件复制到另一台电脑。
+
+### 4. 导入
+
+在另一台电脑执行：
+
+```bash
+# 方式一：先把分片放入 .sync\in\ 再执行
+noteslip import
+
+# 方式二：设置了 NOTESLIP_PARTS_DIR 环境变量，自动从该目录读取
+noteslip import
+```
+
+### 5. 处理冲突
+
+导入后如果出现冲突：
+
+1. 查看 `main\.conflicts\` 目录，找到冲突文件
+2. 对比本地版本（`main\<path>`）和远程版本（`.conflicts\<path>__CONFLICT__...`）
+3. 手工合并为最终版本，保存到 `main\<path>`
+4. 删除 `.conflicts` 中对应的文件
+5. 再次导出，将合并结果同步回对方
+
+## 日常流程
+
+```
+公司改笔记 → noteslip export → 拷走 part*.txt
+    ↓
+家里 noteslip import → 没冲突则完成 / 有冲突则合并后再 export
+    ↓
+带回公司 noteslip import → 两边一致 ✓
+```
+
+反向同理（家里改 → 导出 → 公司导入）。
+
+## 目录说明
+
+| 目录/文件 | 说明 | 是否同步 |
+|---|---|---|
+| `main\**.md` | 主库笔记 | ✅ 同步范围 |
+| `main\.conflicts\` | 冲突文件 | ❌ 不同步 |
+| `.sync\state.json` | 同步状态基线 | ❌ 不同步 |
+| `.sync\out\` | 导出分片 | ❌ 不同步 |
+| `.sync\in\` | 导入分片 | ❌ 不同步 |
+
+## 冲突策略
+
+- **修改冲突**：双方都改了同一文件 → 远程版本存入 `.conflicts`，本地版本不动
+- **删除冲突**：远程删了但本地又改了 → 保留本地版本，在 `.conflicts` 写标记文件
+- **绝不丢数据**：冲突不会自动覆盖，需要人工裁决
+
+## 命令参考
+
+```
+noteslip init <home|work>     # 初始化
+noteslip export               # 导出增量包
+noteslip import               # 导入增量包
+```
+
+## 注意事项
+
+- 同步范围仅限 `main\**.md`，其他文件不会被同步
+- 导入分片时确保按顺序放入 `.sync\in\`，文件名保持 `part001.txt` 格式
+- 分片大小约 900KB，单条文本可安全粘贴到大部分聊天工具

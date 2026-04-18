@@ -1,0 +1,10 @@
+[project]
+name = "noteslip"
+version = "0.1.0"
+description = "双向增量 Markdown 笔记同步工具"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+noteslip = "noteslip.cli:main"
