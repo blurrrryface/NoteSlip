@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import config
-from .scanner import scan_main
+from .scanner import scan_main, _get_main_dir
 from .state import SyncState
 from .delta import compute_delta
 from .exporter import export_package
@@ -17,6 +17,7 @@ from .utils import log_info, log_error
 ENV_VAULT = "NOTESLIP_VAULT"
 ENV_SIDE = "NOTESLIP_SIDE"
 ENV_PARTS_DIR = "NOTESLIP_PARTS_DIR"
+ENV_SYNC_HOME = "NOTESLIP_SYNC_HOME"
 ENV_FILE = ".env"
 
 
@@ -63,6 +64,7 @@ def load_dotenv() -> None:
 
 def cmd_init(args) -> None:
     vault = Path(args.vault).resolve()
+    sync_home = Path(args.sync_home).resolve() if args.sync_home else vault
     side = args.side or os.environ.get(ENV_SIDE)
 
     if side is None:
@@ -74,9 +76,9 @@ def cmd_init(args) -> None:
         sys.exit(1)
 
     # 创建目录结构
-    main_dir = vault / config.MAIN_DIR
-    conflicts_dir = main_dir / config.CONFLICTS_DIR
-    sync_dir = vault / config.SYNC_DIR
+    main_dir = _get_main_dir(vault)
+    conflicts_dir = vault / config.CONFLICTS_DIR
+    sync_dir = sync_home / config.SYNC_DIR
     out_dir = sync_dir / config.OUT_DIR
     in_dir = sync_dir / config.IN_DIR
 
@@ -88,15 +90,16 @@ def cmd_init(args) -> None:
     if state_path.exists():
         log_info(f"state.json 已存在，将重新初始化：{state_path}")
 
-    SyncState.init(vault, side)
-    log_info(f"初始化完成！vault={vault}, side={side}")
+    SyncState.init(vault, side, sync_home=sync_home)
+    log_info(f"初始化完成！vault={vault}, sync_home={sync_home}, side={side}")
 
 
 def cmd_export(args) -> None:
     vault = Path(args.vault).resolve()
-    state = SyncState(vault).load()
+    sync_home = Path(args.sync_home).resolve() if args.sync_home else vault
+    state = SyncState(vault, sync_home=sync_home).load()
 
-    # 扫描当前 main
+    # 扫描当前笔记目录
     current = scan_main(vault)
 
     # 计算差量
@@ -114,7 +117,7 @@ def cmd_export(args) -> None:
         return
 
     # 打包导出
-    part_count = export_package(vault, delta, current)
+    part_count = export_package(vault, delta, current, sync_home=sync_home)
 
     # 更新状态
     state.export_base = current
@@ -126,9 +129,11 @@ def cmd_export(args) -> None:
 
 def cmd_import(args) -> None:
     vault = Path(args.vault).resolve()
-    state = SyncState(vault).load()
+    sync_home = Path(args.sync_home).resolve() if args.sync_home else vault
+    state = SyncState(vault, sync_home=sync_home).load()
 
-    in_dir = vault / config.SYNC_DIR / config.IN_DIR
+    sync_dir = sync_home / config.SYNC_DIR
+    in_dir = sync_dir / config.IN_DIR
 
     # 如果提供了分片目录参数，复制文件到 .sync/in/
     if args.parts_dir:
@@ -145,7 +150,7 @@ def cmd_import(args) -> None:
         for f in sorted(parts_src.glob(f"{config.PART_PREFIX}*{config.PART_SUFFIX}")):
             shutil_mod.copy2(f, in_dir / f.name)
 
-    import_package(vault, state)
+    import_package(vault, state, sync_home=sync_home)
 
 
 def main() -> None:
@@ -158,7 +163,12 @@ def main() -> None:
     parser.add_argument(
         "--vault",
         default=os.environ.get(ENV_VAULT, "."),
-        help=f"库根目录路径（默认当前目录，可通过 {ENV_VAULT} 环境变量预设）",
+        help=f"笔记目录路径（默认当前目录，可通过 {ENV_VAULT} 环境变量预设）",
+    )
+    parser.add_argument(
+        "--sync-home",
+        default=os.environ.get(ENV_SYNC_HOME),
+        help=f".sync 所在目录（默认与 vault 相同，可通过 {ENV_SYNC_HOME} 环境变量预设）",
     )
 
     sub = parser.add_subparsers(dest="command", required=True)

@@ -23,15 +23,17 @@ pip install -e .
 编辑项目根目录的 `.env` 文件，填入你的配置：
 
 ```ini
-NOTESLIP_VAULT=D:\Vault
+NOTESLIP_VAULT=D:\AgentSpace
 NOTESLIP_SIDE=home
+NOTESLIP_SYNC_HOME=D:\NoteSlip
 NOTESLIP_PARTS_DIR=
 ```
 
 | 环境变量 | 作用 | 示例值 |
 |---|---|---|
-| `NOTESLIP_VAULT` | 库根目录 | `D:\Vault` |
+| `NOTESLIP_VAULT` | 笔记目录 | `D:\AgentSpace` |
 | `NOTESLIP_SIDE` | 本机标识（home 或 work） | `home` |
+| `NOTESLIP_SYNC_HOME` | `.sync` 所在目录（默认与 vault 相同） | `D:\NoteSlip` |
 | `NOTESLIP_PARTS_DIR` | 导入时的分片目录 | `D:\Downloads\parts` |
 
 程序启动时会自动加载 `.env`，无需手动 source。项目提供了 `.env.example` 模板，复制后修改即可：
@@ -48,22 +50,42 @@ cp .env.example .env
 
 ```bash
 # 公司电脑
-noteslip init home
+noteslip init work
 
 # 家里电脑
-noteslip init work
+noteslip init home
 ```
 
 初始化后目录结构：
 
+**默认（.sync 与笔记同目录）：**
+
 ```
-D:\Vault\
-├── main\              # 主库，放你想同步的 .md 文件
-│   └── .conflicts\    # 冲突文件（本地用，不同步）
-└── .sync\             # 同步元数据
-    ├── state.json     # 状态文件
-    ├── out\           # 导出分片输出
-    └── in\            # 导入分片输入
+D:\AgentSpace\           # vault（笔记目录）
+├── note1.md             # 直接放在根目录的笔记
+├── notes\
+│   └── test.md          # 子目录中的笔记
+├── .conflicts\          # 冲突文件（不同步）
+└── .sync\               # 同步元数据
+    ├── state.json
+    ├── out\
+    └── in\
+```
+
+**分离模式（.sync 在独立目录，通过 `--sync-home` 或 `NOTESLIP_SYNC_HOME` 指定）：**
+
+```
+D:\AgentSpace\           # vault（笔记目录）
+├── note1.md
+├── notes\
+│   └── test.md
+└── .conflicts\          # 冲突文件
+
+D:\NoteSlip\             # sync_home（.sync 所在目录）
+└── .sync\
+    ├── state.json
+    ├── out\
+    └── in\
 ```
 
 ### 2. 导出
@@ -96,9 +118,9 @@ noteslip import
 
 导入后如果出现冲突：
 
-1. 查看 `main\.conflicts\` 目录，找到冲突文件
-2. 对比本地版本（`main\<path>`）和远程版本（`.conflicts\<path>__CONFLICT__...`）
-3. 手工合并为最终版本，保存到 `main\<path>`
+1. 查看 `.conflicts\` 目录，找到冲突文件
+2. 对比本地版本和远程版本（`.conflicts\<path>__CONFLICT__...`）
+3. 手工合并为最终版本，保存到原路径
 4. 删除 `.conflicts` 中对应的文件
 5. 再次导出，将合并结果同步回对方
 
@@ -118,8 +140,8 @@ noteslip import
 
 | 目录/文件 | 说明 | 是否同步 |
 |---|---|---|
-| `main\**.md` | 主库笔记 | ✅ 同步范围 |
-| `main\.conflicts\` | 冲突文件 | ❌ 不同步 |
+| `**.md` | 笔记文件 | ✅ 同步范围 |
+| `.conflicts\` | 冲突文件 | ❌ 不同步 |
 | `.sync\state.json` | 同步状态基线 | ❌ 不同步 |
 | `.sync\out\` | 导出分片 | ❌ 不同步 |
 | `.sync\in\` | 导入分片 | ❌ 不同步 |
@@ -133,13 +155,18 @@ noteslip import
 ## 命令参考
 
 ```
-noteslip init <home|work>     # 初始化
-noteslip export               # 导出增量包
-noteslip import               # 导入增量包
+noteslip init <home|work>                 # 初始化
+noteslip init home --sync-home D:\NoteSlip  # 初始化（.sync 分离模式）
+noteslip export                           # 导出增量包
+noteslip import                           # 导入增量包
 ```
+
+通用参数：
+- `--vault`：笔记目录（默认当前目录，可通过 `NOTESLIP_VAULT` 预设）
+- `--sync-home`：`.sync` 所在目录（默认与 vault 相同，可通过 `NOTESLIP_SYNC_HOME` 预设）
 
 ## 注意事项
 
-- 同步范围仅限 `main\**.md`，其他文件不会被同步
+- 同步范围仅限 `**.md`，其他文件不会被同步
 - 导入分片时确保按顺序放入 `.sync\in\`，文件名保持 `part001.txt` 格式
 - 分片大小约 900KB，单条文本可安全粘贴到大部分聊天工具

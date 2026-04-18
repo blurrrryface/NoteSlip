@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from . import config
+from .scanner import _get_main_dir
 from .utils import log_info, log_warn
 
 
@@ -15,13 +16,15 @@ def export_package(
     vault_root: Path,
     delta: Dict[str, Any],
     current_manifest: Dict[str, Dict[str, Any]],
+    sync_home: Path | None = None,
 ) -> int:
     """执行导出：将 delta.json + changed 文件打包为分片文本。
 
     返回分片数量。
     """
-    main_dir = vault_root / config.MAIN_DIR
-    out_dir = vault_root / config.SYNC_DIR / config.OUT_DIR
+    main_dir = _get_main_dir(vault_root)
+    sync_home = sync_home or vault_root
+    out_dir = sync_home / config.SYNC_DIR / config.OUT_DIR
 
     # 1. 构建 zip 内存缓冲区
     buf = io.BytesIO()

@@ -20,7 +20,7 @@ def sha256_of_file(path: Path) -> str:
 
 
 def is_path_safe(rel_path: str) -> bool:
-    """校验相对路径是否安全（不跳出 main 目录）。
+    """校验相对路径是否安全（不跳出笔记主目录）。
 
     禁止包含 '..' 段、绝对路径、空路径。
     """

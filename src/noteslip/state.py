@@ -12,9 +12,10 @@ from .utils import log_info, log_warn
 class SyncState:
     """封装 .sync/state.json 的读写操作。"""
 
-    def __init__(self, vault_root: Path) -> None:
+    def __init__(self, vault_root: Path, sync_home: Path | None = None) -> None:
         self.vault_root = vault_root
-        self.sync_dir = vault_root / config.SYNC_DIR
+        self.sync_home = sync_home or vault_root
+        self.sync_dir = self.sync_home / config.SYNC_DIR
         self.state_path = self.sync_dir / config.STATE_FILE
         self._data: Dict[str, Any] = {}
 
@@ -87,9 +88,9 @@ class SyncState:
     # ── 初始化 ──────────────────────────────────────────
 
     @classmethod
-    def init(cls, vault_root: Path, side: str) -> "SyncState":
+    def init(cls, vault_root: Path, side: str, sync_home: Path | None = None) -> "SyncState":
         """创建新的 state.json。"""
-        st = cls(vault_root)
+        st = cls(vault_root, sync_home=sync_home)
         st._data = {
             "side": side,
             "export_base": {},
@@ -98,5 +99,5 @@ class SyncState:
             "imported_ids": [],
         }
         st.save()
-        log_info(f"已初始化：side={side}, vault={vault_root}")
+        log_info(f"已初始化：side={side}, vault={vault_root}, sync_home={st.sync_home}")
         return st

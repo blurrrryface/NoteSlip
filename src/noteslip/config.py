@@ -3,7 +3,7 @@
 from pathlib import Path
 
 # ── 目录名 ──────────────────────────────────────────────
-MAIN_DIR = "main"
+MAIN_DIR = ""  # 空字符串表示 vault 根目录即为笔记目录
 SYNC_DIR = ".sync"
 CONFLICTS_DIR = ".conflicts"
 OUT_DIR = "out"
@@ -29,8 +29,8 @@ CONFLICT_TAG = "CONFLICT"
 DELETE_CONFLICT_TAG = "DELETE_CONFLICT"
 CONFLICT_FROM_PREFIX = "from_"
 
-# ── 排除目录（相对 main 的路径片段） ────────────────────────
-EXCLUDED_PREFIXES = (CONFLICTS_DIR,)
+# ── 排除目录（扫描时跳过，第一级目录名） ────────────────────
+EXCLUDED_PREFIXES = (CONFLICTS_DIR, SYNC_DIR)
 
 # ── 哈希 ────────────────────────────────────────────────
 HASH_BUF_SIZE = 8192  # 8KB 分块读

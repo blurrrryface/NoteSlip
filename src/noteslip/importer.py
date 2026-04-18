@@ -9,15 +9,17 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 
 from . import config
+from .scanner import _get_main_dir
 from .state import SyncState
 from .utils import sha256_of_file, log_info, log_warn, log_error, is_path_safe
 
 
-def import_package(vault_root: Path, state: SyncState) -> None:
+def import_package(vault_root: Path, state: SyncState, sync_home: Path | None = None) -> None:
     """从 .sync/in/ 读取分片，执行完整导入流程。"""
-    in_dir = vault_root / config.SYNC_DIR / config.IN_DIR
-    main_dir = vault_root / config.MAIN_DIR
-    conflicts_dir = main_dir / config.CONFLICTS_DIR
+    sync_home = sync_home or vault_root
+    in_dir = sync_home / config.SYNC_DIR / config.IN_DIR
+    main_dir = _get_main_dir(vault_root)
+    conflicts_dir = vault_root / config.CONFLICTS_DIR
 
     # 1. 收集分片 → 合并
     parts = sorted(in_dir.glob(f"{config.PART_PREFIX}*{config.PART_SUFFIX}"))
@@ -36,7 +38,7 @@ def import_package(vault_root: Path, state: SyncState) -> None:
         log_error(f"base64 解码失败：{e}")
         return
 
-    unpack_dir = vault_root / config.SYNC_DIR / "_unpack"
+    unpack_dir = sync_home / config.SYNC_DIR / "_unpack"
     if unpack_dir.exists():
         shutil.rmtree(unpack_dir)
     unpack_dir.mkdir(parents=True)
