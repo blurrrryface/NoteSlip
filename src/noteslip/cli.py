@@ -17,6 +17,48 @@ from .utils import log_info, log_error
 ENV_VAULT = "NOTESLIP_VAULT"
 ENV_SIDE = "NOTESLIP_SIDE"
 ENV_PARTS_DIR = "NOTESLIP_PARTS_DIR"
+ENV_FILE = ".env"
+
+
+def load_dotenv() -> None:
+    """从当前目录或项目根目录加载 .env 文件到 os.environ。
+
+    仅设置尚未存在的变量，不覆盖已有环境变量。
+    .env 格式：KEY=VALUE，# 开头为注释，忽略空行。
+    """
+    search_paths = [Path.cwd()]
+    # 也尝试从脚本所在目录往上找
+    try:
+        search_paths.append(Path(__file__).resolve().parent.parent.parent)
+    except NameError:
+        pass
+
+    env_path = None
+    for p in search_paths:
+        candidate = p / ENV_FILE
+        if candidate.is_file():
+            env_path = candidate
+            break
+
+    if env_path is None:
+        return
+
+    with open(env_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip()
+            # 去掉引号
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                value = value[1:-1]
+            # 只设置尚未存在的变量
+            if key and key not in os.environ:
+                os.environ[key] = value
 
 
 def cmd_init(args) -> None:
@@ -107,6 +149,8 @@ def cmd_import(args) -> None:
 
 
 def main() -> None:
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         prog="noteslip",
         description="NoteSlip - 双向增量 Markdown 笔记同步工具",

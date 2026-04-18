@@ -10,8 +10,7 @@ wheels/
 .venv
 
 # 环境变量（含本地路径，不提交）
-.env.ps1
-.env.sh
+.env
 
 .env
 

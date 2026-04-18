@@ -20,7 +20,13 @@ pip install -e .
 
 ## 环境变量配置
 
-开始使用前，先设置环境变量。后续所有命令都会自动读取，无需每次指定路径。
+编辑项目根目录的 `.env` 文件，填入你的配置：
+
+```ini
+NOTESLIP_VAULT=D:\Vault
+NOTESLIP_SIDE=home
+NOTESLIP_PARTS_DIR=
+```
 
 | 环境变量 | 作用 | 示例值 |
 |---|---|---|
@@ -28,30 +34,11 @@ pip install -e .
 | `NOTESLIP_SIDE` | 本机标识（home 或 work） | `home` |
 | `NOTESLIP_PARTS_DIR` | 导入时的分片目录 | `D:\Downloads\parts` |
 
-**Windows PowerShell**：
-
-```powershell
-# 直接设置
-$env:NOTESLIP_VAULT="D:\Vault"
-$env:NOTESLIP_SIDE="home"
-
-# 或写入 .env.ps1 文件后每次加载
-. .env.ps1
-```
-
-**Bash / Zsh**：
+程序启动时会自动加载 `.env`，无需手动 source。项目提供了 `.env.example` 模板，复制后修改即可：
 
 ```bash
-export NOTESLIP_VAULT="D:/Vault"
-export NOTESLIP_SIDE="home"
-# 或 source .env.sh
+cp .env.example .env
 ```
-
-项目提供了模板文件，复制后修改路径即可：
-
-- `.env.example` — 通用说明
-- `.env.ps1` — PowerShell 版
-- `.env.sh` — Bash/Zsh 版
 
 ## 使用方法
 
