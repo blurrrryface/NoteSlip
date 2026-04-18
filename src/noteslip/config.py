@@ -21,7 +21,10 @@ PART_NUM_WIDTH = 3  # part001, part002 ...
 CHUNK_SIZE = 900 * 1024  # 900 KB
 
 # ── 扫描 ────────────────────────────────────────────────
-GLOB_PATTERN = "**/*.md"
+# 默认同步的文件扩展名，可通过 NOTESLIP_EXTENSIONS 环境变量覆盖
+# 环境变量格式：逗号分隔，如 ".md,.py,.txt"
+DEFAULT_EXTENSIONS = (".md",)
+GLOB_PATTERN = "**/*"  # 匹配所有文件，由扩展名过滤
 
 # ── 冲突文件命名 ──────────────────────────────────────────
 CONFLICT_SEP = "__"

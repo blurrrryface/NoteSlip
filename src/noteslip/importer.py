@@ -167,12 +167,18 @@ def _conflict_filename(
     from_side: str,
     package_id: str,
     tag: str,
-    ext: str = ".md",
+    ext: str | None = None,
 ) -> str:
-    """生成冲突文件名，将路径中的 / 替换为 __ 以避免深层嵌套。"""
+    """生成冲突文件名，将路径中的 / 替换为 __ 以避免深层嵌套。
+
+    ext 为 None 时从原路径自动推断扩展名；
+    显式指定时使用指定扩展名（如删除冲突标记用 .txt）。
+    """
     flat = rel.replace("/", config.CONFLICT_SEP).replace("\\", config.CONFLICT_SEP)
-    # 如果原始扩展名不是 .md/.txt，使用传入的 ext
-    stem = Path(flat).stem if flat.endswith(ext) else flat
+    p = Path(flat)
+    if ext is None:
+        ext = p.suffix if p.suffix else ".md"
+    stem = p.stem
     return (
         f"{stem}"
         f"{config.CONFLICT_SEP}{tag}"

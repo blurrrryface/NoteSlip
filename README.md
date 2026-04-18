@@ -26,6 +26,7 @@ pip install -e .
 NOTESLIP_VAULT=D:\AgentSpace
 NOTESLIP_SIDE=home
 NOTESLIP_SYNC_HOME=D:\NoteSlip
+NOTESLIP_EXTENSIONS=.md,.py
 NOTESLIP_PARTS_DIR=
 ```
 
@@ -34,6 +35,7 @@ NOTESLIP_PARTS_DIR=
 | `NOTESLIP_VAULT` | 笔记目录 | `D:\AgentSpace` |
 | `NOTESLIP_SIDE` | 本机标识（home 或 work） | `home` |
 | `NOTESLIP_SYNC_HOME` | `.sync` 所在目录（默认与 vault 相同） | `D:\NoteSlip` |
+| `NOTESLIP_EXTENSIONS` | 同步文件扩展名（逗号分隔，默认 `.md`） | `.md,.py,.txt` |
 | `NOTESLIP_PARTS_DIR` | 导入时的分片目录 | `D:\Downloads\parts` |
 
 程序启动时会自动加载 `.env`，无需手动 source。项目提供了 `.env.example` 模板，复制后修改即可：
@@ -140,7 +142,7 @@ noteslip import
 
 | 目录/文件 | 说明 | 是否同步 |
 |---|---|---|
-| `**.md` | 笔记文件 | ✅ 同步范围 |
+| `**` (按扩展名) | 匹配的文件 | ✅ 同步范围 |
 | `.conflicts\` | 冲突文件 | ❌ 不同步 |
 | `.sync\state.json` | 同步状态基线 | ❌ 不同步 |
 | `.sync\out\` | 导出分片 | ❌ 不同步 |
@@ -167,6 +169,7 @@ noteslip import                           # 导入增量包
 
 ## 注意事项
 
-- 同步范围仅限 `**.md`，其他文件不会被同步
+- 默认同步 `.md` 文件，可通过 `NOTESLIP_EXTENSIONS` 扩展（如 `.md,.py,.txt`）
+- 两台电脑的 `NOTESLIP_EXTENSIONS` 配置应保持一致
 - 导入分片时确保按顺序放入 `.sync\in\`，文件名保持 `part001.txt` 格式
 - 分片大小约 900KB，单条文本可安全粘贴到大部分聊天工具
